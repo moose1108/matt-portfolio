@@ -1,8 +1,15 @@
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 
-function App() {
-
+const App = () => {
   return (
-    <h2>hi, I'm Matt</h2>
+    <>
+      <BrowserRouter>
+      </BrowserRouter>
+      <h1>Welcome to My Portfolio</h1>
+      <p>This is a simple portfolio application.</p>
+      <p>Feel free to explore!</p>
+    </>
   )
 }
 
