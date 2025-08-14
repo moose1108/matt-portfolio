@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root{
+  --bg: #0b0f19;            /* 深夜藍黑 */
+  --bg-soft:#0f1524;
+  --card:#0e1628cc;          /* 玻璃 */
+  --txt:#E6EEF8;
+  --muted:#A1B2C9;
+  --primary:#5DE4FF;         /* 霓虹藍 */
+  --accent:#7C4DFF;          /* 霓虹紫 */
+  --ok:#00FFA6;              /* 霓虹綠 */
+  --danger:#FF5D5D;
+  --border: #1d2a44;
+  --shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 60px rgba(92,82,255,.08);
+}
+
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color:var(--txt); background: radial-gradient(1000px 600px at 80% -10%, #13223f 0%, transparent 60%),
+                     radial-gradient(900px 500px at -10% 100%, #1a2544 0%, transparent 60%),
+                     var(--bg);
+}
+
+/* 背景網格 + 漸變掃描線 */
+.tech-bg::before{
+  content:""; position:fixed; inset:0; pointer-events:none;
+  background:
+    linear-gradient(transparent 95%, rgba(93,228,255,.15) 96%) top / 100% 24px repeat-y,
+    linear-gradient(90deg, transparent 95%, rgba(124,77,255,.12) 96%) left / 24px 100% repeat-x;
+  mask-image: radial-gradient(800px 400px at 50% 10%, black 35%, transparent 70%);
+  opacity:.35;
+}
+.tech-bg::after{
+  content:""; position:fixed; inset:-50% -50%; pointer-events:none;
+  background: conic-gradient(from 0deg, transparent 0 240deg, rgba(124,77,255,.15) 260deg 300deg, transparent 320deg 360deg);
+  animation: scan 14s linear infinite;
+  opacity:.35; mix-blend-mode: screen;
+}
+@keyframes scan{to{transform:rotate(360deg)}}
+
+/* 容器 / 卡片 / 玻璃 */
+.container{
+  max-width: 1120px; margin: 0 auto; padding: 24px;
+}
+.card{
+  background: var(--card); border:1px solid var(--border);
+  backdrop-filter: blur(10px);
+  border-radius: 18px; box-shadow: var(--shadow);
+}
+
+/* 標題 */
+.h1{font-size: clamp(28px, 5vw, 40px); font-weight:800; letter-spacing:.4px}
+.sub{color:var(--muted)}
+
+/* 霓虹按鈕 */
+.btn{
+  padding:10px 16px; border-radius:12px; border:1px solid #203050;
+  background: linear-gradient(180deg, #0f1a2e, #0b1425);
+  color:var(--txt); display:inline-flex; align-items:center; gap:8px;
+  box-shadow: 0 0 0 0 rgba(93,228,255,0), inset 0 0 0 1px rgba(255,255,255,.03);
+  transition: transform .15s ease, box-shadow .3s ease, border-color .2s ease;
+}
+.btn:hover{
+  transform: translateY(-1px);
+  border-color:#2a3e63; box-shadow: 0 12px 30px rgba(93,228,255,.15), 0 0 16px rgba(124,77,255,.2);
+}
+.btn.primary{
+  background: radial-gradient(120% 140% at 10% -20%, rgba(93,228,255,.25), transparent 40%),
+              linear-gradient(180deg, #112036, #0c1729);
+  border-color:#264056;
+}
+.btn.glow{
+  box-shadow: 0 0 0 2px rgba(93,228,255,.15), 0 0 40px rgba(124,77,255,.15);
+}
+
+/* 進度條 */
+.progress{height:10px; background:#111a2d; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+.progress > span{
+  display:block; height:100%; width:0%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  box-shadow: 0 0 20px rgba(93,228,255,.4);
+  transition: width .2s ease;
+}
+
+/* 小徽章 */
+.badge{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:999px; font-size:12px;
+  color:#8fd5ff; border:1px solid #264a63; background: #0c1729;
+}
+
+/* 卡片分區 */
+.section{padding:20px}
+.grid{display:grid; gap:16px}
+.grid-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+@media (max-width: 840px){ .grid-2{grid-template-columns:1fr} }
+.mono{font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+
+/* 超連結 */
+a{ color: var(--primary); text-decoration: none}
+a:hover{ text-decoration: underline }
+
+/* 細節：邊框亮點 */
+.edge{
+  position: relative;
+}
+.edge::after{
+  content:""; position:absolute; inset: -1px;
+  border-radius: inherit; pointer-events:none;
+  background: linear-gradient(90deg, transparent, rgba(93,228,255,.28), transparent);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.45;
+}

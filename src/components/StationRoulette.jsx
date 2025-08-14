@@ -12,10 +12,10 @@ function normalizeName(name) {
 const stations = Array.from(new Set(stationsRaw.map(normalizeName).filter(Boolean)));
 
 function useRoulette(list, {
-  ticks = 140,       // 總跳動次數（越大→越久）
-  baseDelay = 12,    // 起始延遲 ms（越小→前段越快）
-  grow = 1.16,       // 每跳延遲乘數（>1→漸慢），1.14~1.18 手感好
-  maxDelay = 1000,   // 單跳最大延遲上限
+  ticks = 150,      // 總跳動次數（越大→越久）
+  baseDelay = 10,   // 起始延遲 ms（越小→前段越快）
+  grow = 1.17,      // 每跳延遲乘數（>1→漸慢）
+  maxDelay = 1000,  // 單跳最大延遲上限
 } = {}) {
   const [current, setCurrent] = useState("Press Start to begin");
   const [running, setRunning] = useState(false);
@@ -97,62 +97,41 @@ export default function StationRouletteLite() {
   }, [done, current]);
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
-      <h1 style={{ textAlign: "center", margin: "16px 0" }}>TRA Station Roulette</h1>
+    <div className="tech-bg">
+      <div className="container">
+        <div className="card edge section" style={{ marginTop: 16 }}>
+          <div className="badge mono">TRA · Roulette</div>
+          <h1 className="h1" style={{ margin: "8px 0 4px" }}>Station Roulette</h1>
+          <p className="sub">抽出下一站，然後開地圖看看。</p>
 
-      {/* 「拉霸」視覺：上一個/當前/下一個 */}
-      <div style={{ display: "grid", placeItems: "center", height: 140, marginBottom: 8 }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ opacity: 0.35, fontSize: 18, height: 24 }}>{running ? "…" : ""}</div>
-          <div style={{ fontSize: done ? 34 : 30, fontWeight: 700, letterSpacing: 0.5 }}>
-            {done ? `We are going to ${current}` : current}
+          {/* 中央顯示 */}
+          <div style={{ display: "grid", placeItems: "center", height: 140, margin: "12px 0" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
+              <div style={{ fontSize: done ? 34 : 30, fontWeight: 800, letterSpacing: .6 }}>
+                {done ? `We are going to ${current}` : current}
+              </div>
+              <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
+            </div>
           </div>
-          <div style={{ opacity: 0.35, fontSize: 18, height: 24 }}>{running ? "…" : ""}</div>
+
+          {/* 進度條 */}
+          <div className="progress">
+            <span style={{ width: `${Math.round(progress * 100)}%` }} />
+          </div>
+
+          {/* 控制列 */}
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 12 }}>
+            <button className="btn primary" onClick={start} disabled={running}>Start</button>
+            <button className="btn" onClick={stop} disabled={!running}>Stop</button>
+            <button className="btn" onClick={reset} disabled={running}>Reset</button>
+            {done && (
+              <a className="btn glow" href={mapsUrl} target="_blank" rel="noreferrer">
+                Open in Maps
+              </a>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* 進度條 */}
-      <div style={{ height: 8, background: "#eee", borderRadius: 6, overflow: "hidden", margin: "8px 0 16px" }}>
-        <div style={{ height: "100%", width: `${Math.round(progress * 100)}%`, background: "#4caf50" }} />
-      </div>
-
-      {/* 控制區 */}
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
-        <button onClick={start} disabled={running} style={{ padding: "8px 12px" }}>Start</button>
-        <button onClick={stop} disabled={!running} style={{ padding: "8px 12px" }}>Stop</button>
-        <button onClick={reset} disabled={running} style={{ padding: "8px 12px" }}>Reset</button>
-        {done && (
-          <a
-            href={mapsUrl}
-            target="_blank" rel="noreferrer"
-            style={{ padding: "8px 12px", background: "#1a73e8", color: "#fff", borderRadius: 6, textDecoration: "none" }}
-            title="在 Google Maps 開啟"
-          >
-            Open in Google Maps
-          </a>
-        )}
-      </div>
-
-      {/* 可選：把全部站名做成雲圖，抽中者加亮 */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
-        gap: 6, paddingTop: 8, color: "#666"
-      }}>
-        {stations.slice(0, 240).map((s) => (
-          <div key={s}
-            style={{
-              padding: "6px 8px",
-              borderRadius: 8,
-              background: s === current ? "rgba(76,175,80,0.12)" : "transparent",
-              fontWeight: s === current ? 700 : 400,
-              color: s === current ? "#2e7d32" : "#666",
-              textAlign: "center",
-            }}
-          >
-            {s}
-          </div>
-        ))}
       </div>
     </div>
   );
