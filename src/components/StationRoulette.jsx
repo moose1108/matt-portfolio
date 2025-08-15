@@ -27,13 +27,17 @@ function useRoulette(list, {
   // 預先算好每一跳的延遲（漸慢）
   const delays = useMemo(() => {
     const arr = [];
-    let d = baseDelay;
-    for (let i = 0; i < ticks; i++) {
-      arr.push(Math.min(d, maxDelay));
-      d *= grow;
-    }
+    const fast = Math.floor(ticks * 0.25);
+    const mid  = Math.floor(ticks * 0.10);
+    const slow = ticks - fast - mid;
+  
+    let d = 8; // 開局更快
+    for (let i=0;i<fast;i++){ arr.push(Math.min(d, maxDelay)); d *= 1.05; }
+    for (let i=0;i<mid;i++){  arr.push(Math.min(d, maxDelay)); d *= 1.10; }
+    for (let i=0;i<slow;i++){ arr.push(Math.min(d, maxDelay)); d *= 1.13; }
     return arr;
-  }, [ticks, baseDelay, grow, maxDelay]);
+  }, [ticks, maxDelay]);
+  
 
   // 產一副「轉盤序列」，最後一格鎖定目標
   const deck = useMemo(() => {
@@ -109,7 +113,13 @@ export default function StationRouletteLite() {
             <div style={{ textAlign: "center" }}>
               <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
               <div style={{ fontSize: done ? 34 : 30, fontWeight: 800, letterSpacing: .6 }}>
-                {done ? `We are going to ${current}` : current}
+                {done ? (
+                  <>
+                    We are going to<br />{current}
+                  </>
+                ) : (
+                  current
+                )}
               </div>
               <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
             </div>
