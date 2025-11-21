@@ -2,6 +2,7 @@
 import React from "react";
 import { HashRouter, Routes, Route, Link } from "react-router-dom";
 import StationRoulette from "./components/StationRoulette";
+import MRT from "./components/MRT";
 import "./theme.css"; // 科技感主題（若你已在別處引入，可刪這行）
 
 function Home() {
@@ -69,6 +70,7 @@ export default function App() {
             <nav style={{ display: "flex", gap: 10 }}>
               <Link className="btn" to="/">Home</Link>
               <Link className="btn" to="/roulette">Roulette</Link>
+              <Link className="btn" to="/MRT">MRT</Link>
               <a
                 className="btn"
                 href="https://www.instagram.com/moose_the_guide/"
@@ -85,6 +87,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/roulette" element={<StationRoulette />} />
+          <Route path="/MRT" element={<MRT />} />
         </Routes>
 
         <footer className="container">
