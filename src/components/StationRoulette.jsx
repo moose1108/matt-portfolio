@@ -1,146 +1,243 @@
-// src/pages/StationRouletteLite.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import stationsRaw from "../data/stations.json";
+import traRaw from "../data/stations.json";
+import mrtRaw from "../data/MRT.json";
 
-// 標準化站名：台→臺、去空白與括號
+const SEGMENTS = 12;
+const SPIN_MS = 4800;
+
 function normalizeName(name) {
   return String(name)
     .replace(/台/g, "臺")
     .replace(/\s+/g, "")
-    .replace(/（.*?）|\(.*?\)/g, "");
+    .replace(/（.*?）|\(.*?\)/g, "")
+    .replace(/[A-Za-z].*$/, "")
+    .trim();
 }
-const stations = Array.from(new Set(stationsRaw.map(normalizeName).filter(Boolean)));
 
-function useRoulette(list, {
-  ticks = 150,      // 總跳動次數（越大→越久）
-  baseDelay = 10,   // 起始延遲 ms（越小→前段越快）
-  grow = 1.17,      // 每跳延遲乘數（>1→漸慢）
-  maxDelay = 1000,  // 單跳最大延遲上限
-} = {}) {
-  const [current, setCurrent] = useState("Press Start to begin");
-  const [running, setRunning] = useState(false);
-  const [done, setDone] = useState(false);
-  const [finalTarget, setFinalTarget] = useState(null);
-  const [index, setIndex] = useState(0);
-  const timerRef = useRef(null);
+function uniqueStations(raw) {
+  return Array.from(new Set(raw.map(normalizeName).filter(Boolean)));
+}
 
-  // 預先算好每一跳的延遲（漸慢）
-  const delays = useMemo(() => {
-    const arr = [];
-    const fast = Math.floor(ticks * 0.25);
-    const mid  = Math.floor(ticks * 0.10);
-    const slow = ticks - fast - mid;
-  
-    let d = 8; // 開局更快
-    for (let i=0;i<fast;i++){ arr.push(Math.min(d, maxDelay)); d *= 1.05; }
-    for (let i=0;i<mid;i++){  arr.push(Math.min(d, maxDelay)); d *= 1.10; }
-    for (let i=0;i<slow;i++){ arr.push(Math.min(d, maxDelay)); d *= 1.13; }
-    return arr;
-  }, [ticks, maxDelay]);
-  
+const DATASETS = {
+  tra: {
+    id: "tra",
+    label: "台鐵",
+    hint: "全台鐵路車站",
+    mapsSuffix: "車站, 台灣",
+    stations: uniqueStations(traRaw),
+  },
+  mrt: {
+    id: "mrt",
+    label: "捷運",
+    hint: "台北捷運車站",
+    mapsSuffix: "捷運站, 台北",
+    stations: uniqueStations(mrtRaw),
+  },
+};
 
-  // 產一副「轉盤序列」，最後一格鎖定目標
-  const deck = useMemo(() => {
-    if (!finalTarget) return [];
-    const bag = [...list].sort(() => Math.random() - 0.5);
-    if (!bag.includes(finalTarget)) bag[0] = finalTarget;
-    while (bag.length < ticks) bag.push(...[...list].sort(() => Math.random() - 0.5));
-    bag[ticks - 1] = finalTarget;
-    return bag.slice(0, ticks);
-  }, [list, ticks, finalTarget]);
+function pickWheelLabels(stations, count) {
+  const winner = stations[Math.floor(Math.random() * stations.length)];
+  const pool = stations.filter((s) => s !== winner);
+  const others = [];
+  const bag = [...pool].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < count - 1 && i < bag.length; i++) others.push(bag[i]);
 
-  const start = () => {
-    if (running) return;
-    setFinalTarget(list[Math.floor(Math.random() * list.length)]);
-    setIndex(0);
-    setCurrent("…");
-    setDone(false);
-    setRunning(true);
+  while (others.length < count - 1) {
+    others.push(bag[others.length % bag.length] || winner);
+  }
+
+  const winnerIndex = Math.floor(Math.random() * count);
+  const labels = [...others];
+  labels.splice(winnerIndex, 0, winner);
+  return { labels: labels.slice(0, count), winner, winnerIndex };
+}
+
+function shortLabel(name) {
+  if (name.length <= 5) return name;
+  return `${name.slice(0, 4)}…`;
+}
+
+export default function StationRoulette() {
+  const [mode, setMode] = useState("tra");
+  const [labels, setLabels] = useState(() =>
+    Array.from({ length: SEGMENTS }, (_, i) => DATASETS.tra.stations[i] || "—")
+  );
+  const [rotation, setRotation] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState(null);
+  const spinTimer = useRef(null);
+  const rotationRef = useRef(0);
+
+  const dataset = DATASETS[mode];
+  const slice = 360 / SEGMENTS;
+
+  const wheelColors = useMemo(() => {
+    const a = mode === "tra" ? "#0f6e6a" : "#1f4f8a";
+    const b = mode === "tra" ? "#d4c4a8" : "#c5d4e8";
+    const c = mode === "tra" ? "#f8fafb" : "#eef3f8";
+    return Array.from({ length: SEGMENTS }, (_, i) => {
+      if (i % 3 === 0) return a;
+      if (i % 3 === 1) return b;
+      return c;
+    });
+  }, [mode]);
+
+  const conic = useMemo(() => {
+    const parts = wheelColors.map((color, i) => {
+      const start = i * slice;
+      const end = (i + 1) * slice;
+      return `${color} ${start}deg ${end}deg`;
+    });
+    return `conic-gradient(from ${-slice / 2}deg, ${parts.join(", ")})`;
+  }, [wheelColors, slice]);
+
+  useEffect(() => () => {
+    if (spinTimer.current) clearTimeout(spinTimer.current);
+  }, []);
+
+  const switchMode = (next) => {
+    if (spinning || next === mode) return;
+    setMode(next);
+    setResult(null);
+    const preview = DATASETS[next].stations.slice(0, SEGMENTS);
+    setLabels(preview.length === SEGMENTS ? preview : [
+      ...preview,
+      ...Array.from({ length: SEGMENTS - preview.length }, () => "—"),
+    ]);
   };
-  const stop = () => {
-    setRunning(false);
-    if (timerRef.current) clearTimeout(timerRef.current);
+
+  const spin = () => {
+    if (spinning || dataset.stations.length < 2) return;
+
+    const { labels: nextLabels, winner, winnerIndex } = pickWheelLabels(
+      dataset.stations,
+      SEGMENTS
+    );
+    setLabels(nextLabels);
+    setResult(null);
+    setSpinning(true);
+
+    const current = rotationRef.current;
+    const currentMod = ((current % 360) + 360) % 360;
+    // Segment i is centered at i * slice (conic starts at -slice/2)
+    const targetMod = (360 - ((winnerIndex * slice) % 360)) % 360;
+    let delta = targetMod - currentMod;
+    if (delta <= 0) delta += 360;
+    const nextRotation = current + delta + 360 * 5;
+
+    // Force style flush so transition always runs even if labels change
+    requestAnimationFrame(() => {
+      rotationRef.current = nextRotation;
+      setRotation(nextRotation);
+    });
+
+    spinTimer.current = setTimeout(() => {
+      setSpinning(false);
+      setResult(winner);
+    }, SPIN_MS);
   };
+
   const reset = () => {
-    stop();
-    setIndex(0);
-    setCurrent("Press Start to begin");
-    setDone(false);
-    setFinalTarget(null);
+    if (spinning) return;
+    setResult(null);
+    const preview = dataset.stations.slice(0, SEGMENTS);
+    setLabels(preview);
   };
 
-  useEffect(() => {
-    if (!running || !finalTarget || deck.length === 0) return;
-    const tick = () => {
-      setCurrent(deck[index]);
-      const next = index + 1;
-      if (next >= deck.length) {
-        setRunning(false);
-        setDone(true);
-        return;
-      }
-      setIndex(next);
-      timerRef.current = setTimeout(tick, delays[next]);
-    };
-    timerRef.current = setTimeout(tick, delays[0]);
-    return () => timerRef.current && clearTimeout(timerRef.current);
-  }, [running, finalTarget, deck, delays, index]);
-
-  const progress = Math.min(1, (index + (done ? 1 : 0)) / ticks);
-  return { current, done, running, progress, start, stop, reset };
-}
-
-export default function StationRouletteLite() {
-  const { current, done, running, progress, start, stop, reset } =
-    useRoulette(stations, { ticks: 150, baseDelay: 10, grow: 1.17 });
-
-  const mapsUrl = useMemo(() => {
-    if (!done) return null;
-    const q = encodeURIComponent(`${current} 車站, 台灣`);
-    return `https://www.google.com/maps?q=${q}`;
-  }, [done, current]);
+  const mapsUrl = result
+    ? `https://www.google.com/maps?q=${encodeURIComponent(`${result} ${dataset.mapsSuffix}`)}`
+    : null;
 
   return (
     <div className="tech-bg">
-      <div className="container">
-        <div className="card edge section" style={{ marginTop: 16 }}>
-          <div className="badge mono">TRA · Roulette</div>
-          <h1 className="h1" style={{ margin: "8px 0 4px" }}>Station Roulette</h1>
-          <p className="sub">抽出下一站，然後開地圖看看。</p>
+      <div className="container wheel-page">
+        <div className="wheel-intro">
+          <div className="badge">{mode === "tra" ? "TRA" : "MRT"} · Roulette</div>
+          <h1 className="h1-sm">車站轉盤</h1>
+          <p className="sub">選台鐵或捷運，轉出下一站再去探險。</p>
 
-          {/* 中央顯示 */}
-          <div style={{ display: "grid", placeItems: "center", height: 140, margin: "12px 0" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
-              <div style={{ fontSize: done ? 34 : 30, fontWeight: 800, letterSpacing: .6 }}>
-                {done ? (
-                  <>
-                    We are going to<br />{current}
-                  </>
-                ) : (
-                  current
-                )}
-              </div>
-              <div style={{ opacity: .35, fontSize: 14, height: 20 }} />
-            </div>
+          <div className="mode-switch" role="tablist" aria-label="車站系統">
+            {Object.values(DATASETS).map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                role="tab"
+                aria-selected={mode === d.id}
+                className={`mode-btn ${mode === d.id ? "active" : ""}`}
+                onClick={() => switchMode(d.id)}
+                disabled={spinning}
+              >
+                <span className="mode-btn-label">{d.label}</span>
+                <span className="mode-btn-hint">{d.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={`wheel-stage ${mode}`}>
+          <div className="wheel-pointer" aria-hidden="true" />
+          <div
+            className={`wheel ${spinning ? "is-spinning" : ""}`}
+            style={{
+              background: conic,
+              transform: `rotate(${rotation}deg)`,
+              transition: spinning
+                ? `transform ${SPIN_MS}ms cubic-bezier(0.12, 0.8, 0.08, 1)`
+                : "none",
+            }}
+          >
+            {labels.map((name, i) => {
+              const angle = i * slice;
+              const dark = i % 3 === 0;
+              return (
+                <div
+                  key={`${name}-${i}`}
+                  className={`wheel-slice-label ${dark ? "on-dark" : ""}`}
+                  style={{ transform: `rotate(${angle}deg)` }}
+                >
+                  <span>{shortLabel(name)}</span>
+                </div>
+              );
+            })}
+            <div className="wheel-ring" aria-hidden="true" />
           </div>
 
-          {/* 進度條 */}
-          <div className="progress">
-            <span style={{ width: `${Math.round(progress * 100)}%` }} />
-          </div>
+          <button
+            type="button"
+            className="wheel-hub"
+            onClick={spin}
+            disabled={spinning}
+            aria-label="開始轉動"
+          >
+            {spinning ? "…" : "轉"}
+          </button>
+        </div>
 
-          {/* 控制列 */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 12 }}>
-            <button className="btn primary" onClick={start} disabled={running}>Start</button>
-            <button className="btn" onClick={stop} disabled={!running}>Stop</button>
-            <button className="btn" onClick={reset} disabled={running}>Reset</button>
-            {done && (
-              <a className="btn glow" href={mapsUrl} target="_blank" rel="noreferrer">
-                Open in Maps
-              </a>
-            )}
-          </div>
+        <div className="wheel-result" aria-live="polite">
+          {spinning && <p className="sub">轉盤轉動中…</p>}
+          {!spinning && !result && (
+            <p className="sub">按中間的「轉」抽出下一站</p>
+          )}
+          {!spinning && result && (
+            <>
+              <p className="mono">下一站</p>
+              <p className="wheel-winner">{result}</p>
+            </>
+          )}
+        </div>
+
+        <div className="wheel-actions">
+          <button className="btn primary" onClick={spin} disabled={spinning}>
+            {spinning ? "轉動中" : "再轉一次"}
+          </button>
+          <button className="btn" onClick={reset} disabled={spinning}>
+            Reset
+          </button>
+          {result && mapsUrl && (
+            <a className="btn" href={mapsUrl} target="_blank" rel="noreferrer">
+              Open in Maps
+            </a>
+          )}
         </div>
       </div>
     </div>
