@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import StationRoulette from "./components/StationRoulette";
+import volcanoVideo from "../volcano.mp4";
 import "./theme.css";
 
 function scrollToId(id) {
@@ -103,32 +104,47 @@ const SKILLS = [
 function Home() {
   return (
     <main>
-      <section className="hero container" aria-label="Introduction">
-        <p className="mono hero-kicker">Meng-Chi (Matt) Tsai</p>
-        <h1 className="h1">
-          Building ML systems
-          <br />
-          for the real world.
-        </h1>
-        <p className="lede">
-          M.S. ECE — Machine Learning & Data Science at UC San Diego.
-          Previously CS at NTU, with work spanning climate ML, agentic systems, and LLM safety.
-        </p>
-        <div className="hero-actions">
-          <SectionLink className="btn primary" id="experience">
-            View experience
-          </SectionLink>
-          <a className="btn" href="mailto:moosethegrad@gmail.com">
-            Email
-          </a>
-          <a
-            className="btn"
-            href="https://github.com/moose1108"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
+      <section className="hero" aria-label="Introduction">
+        <video
+          className="hero-video"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          tabIndex="-1"
+        >
+          <source src={volcanoVideo} type="video/mp4" />
+        </video>
+        <div className="hero-overlay" aria-hidden="true" />
+        <div className="container hero-content">
+          <p className="mono hero-kicker">Meng-Chi (Matt) Tsai</p>
+          <h1 className="h1">
+            Building ML systems
+            <br />
+            for the real world.
+          </h1>
+          <p className="lede">
+            M.S. ECE — Machine Learning & Data Science at UC San Diego.
+            Previously CS at NTU, with work spanning climate ML, agentic systems, and LLM safety.
+          </p>
+          <div className="hero-actions">
+            <SectionLink className="btn primary" id="experience">
+              View experience
+            </SectionLink>
+            <a className="btn" href="mailto:moosethegrad@gmail.com">
+              Email
+            </a>
+            <a
+              className="btn"
+              href="https://github.com/moose1108"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </section>
 
