@@ -149,6 +149,17 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   text-decoration: none;
 }
 
+.birthday-nav-link {
+  color: #ff8fc0;
+}
+
+.birthday-nav-link::before {
+  content: "★";
+  margin-right: 6px;
+  color: #ffe66d;
+  font-size: 0.72em;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

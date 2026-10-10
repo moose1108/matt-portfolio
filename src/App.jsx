@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import StationRoulette from "./components/StationRoulette";
+import BirthdayPuzzle from "./components/BirthdayPuzzle";
 import volcanoVideo from "../volcano.mp4";
 import "./theme.css";
 
@@ -276,6 +277,9 @@ export default function App() {
               <Link className="nav-link" to="/roulette">
                 Roulette
               </Link>
+              <Link className="nav-link birthday-nav-link" to="/birthday">
+                Birthday Quest
+              </Link>
             </nav>
           </div>
         </header>
@@ -283,6 +287,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/roulette" element={<StationRoulette />} />
+          <Route path="/birthday" element={<BirthdayPuzzle />} />
           <Route path="/MRT" element={<Navigate to="/roulette" replace />} />
         </Routes>
 
